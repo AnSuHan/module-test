@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Social Login Test</title>
+</head>
+<body>
+    <h1>Social Login Test</h1>
+    <div>
+        <button onclick="authorize('google')">Google Login</button>
+        <button onclick="authorize('kakao')">Kakao Login</button>
+        <button onclick="authorize('naver')">Naver Login</button>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:8080';
+        const REDIRECT_URI = window.location.origin + window.location.pathname.replace('index.html', '').replace(/\/$/, '') + '/callback.html';
+
+        async function authorize(provider) {
+            try {
+                const url = `${BACKEND_URL}/auth/social/${provider}/authorize?redirectUri=${encodeURIComponent(REDIRECT_URI)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('social_login_state', data.state);
+                    localStorage.setItem('social_login_provider', provider);
+                    window.location.href = data.authorizationUrl;
+                } else {
+                    alert('Error: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Authorize error:', error);
+                alert('백엔드 서버가 실행 중인지 확인하세요.');
+            }
+        }
+    </script>
+</body>
+</html>

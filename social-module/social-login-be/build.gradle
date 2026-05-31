@@ -1,0 +1,78 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.1.0-RC1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.ashmodule'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+}
+
+repositories {
+	mavenCentral()
+	// Spring Boot 4.1.0-RC1 등 마일스톤/RC 아티팩트.
+	maven { url = 'https://repo.spring.io/milestone' }
+	// ash-social-module 이 게시된 GitHub Packages (private). read:packages 토큰 필요.
+	// 자격증명: ~/.gradle/gradle.properties 의 gpr.user/gpr.token, 또는 환경변수 LOCAL_GITHUB_TOKEN.
+	maven {
+		name = 'GitHubPackagesAshModule'
+		url = 'https://maven.pkg.github.com/AshModule/ash-social-module'
+		credentials {
+			username = findProperty('gpr.user') ?: System.getenv('LOCAL_GITHUB_ACTOR') ?: 'AnSuHan'
+			password = findProperty('gpr.token') ?: System.getenv('LOCAL_GITHUB_TOKEN')
+		}
+	}
+}
+
+dependencies {
+	// 소셜 로그인 모듈 (security/webmvc/oauth2-jose/validation/postgresql/spring-dotenv 를 전이 포함).
+	implementation 'com.ashmodule:ash-social-module:0.0.1-SNAPSHOT'
+	// 모듈은 data-jpa 를 compileOnly(optional) 로 두므로, persistence.mode=jpa 를 쓰는 호스트는 직접 추가해야 한다.
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	runtimeOnly 'org.postgresql:postgresql'
+
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testCompileOnly 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+// .env(있으면)를 읽어 실행 태스크의 환경 변수로 주입한다.
+def loadDotenv = {
+	def map = [:]
+	def envFile = file('.env')
+	if (envFile.exists()) {
+		envFile.readLines('UTF-8').each { raw ->
+			def line = raw.trim()
+			if (line && !line.startsWith('#') && line.contains('=')) {
+				def i = line.indexOf('=')
+				map[line.substring(0, i).trim()] = line.substring(i + 1).trim()
+			}
+		}
+	}
+	return map
+}
+
+tasks.withType(JavaExec).configureEach {
+	loadDotenv().each { k, v -> environment(k, v) }
+}
+
+tasks.named('bootRun') {
+	// JavaExec 에 포함되지만 명시적으로 설정
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	loadDotenv().each { k, v -> environment(k, v) }
+}

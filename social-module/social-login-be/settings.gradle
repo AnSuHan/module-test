@@ -1,0 +1,15 @@
+pluginManagement {
+	repositories {
+		gradlePluginPortal()
+		mavenCentral()
+		// Spring Boot 4.1.0-RC1 Gradle 플러그인 (마일스톤).
+		maven { url = 'https://repo.spring.io/milestone' }
+	}
+}
+
+plugins {
+	// 툴체인(JDK 25) 자동 프로비저닝.
+	id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+rootProject.name = 'social-login'

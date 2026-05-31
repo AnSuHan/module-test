@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>OAuth Callback</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 0 16px; }
+        pre { background: #f4f4f4; padding: 15px; border: 1px solid #ddd; border-radius: 4px;
+              white-space: pre-wrap; word-break: break-all; }
+        h3 { margin-top: 24px; }
+    </style>
+</head>
+<body>
+    <h1>Processing Login...</h1>
+
+    <h3>Provider Redirect (received from provider):</h3>
+    <pre id="providerResult">읽는 중...</pre>
+
+    <h3>Backend Response:</h3>
+    <pre id="result">응답을 기다리는 중...</pre>
+
+    <br>
+    <a href="index.html">메인으로 돌아가기</a>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:8080';
+
+        // provider 서버가 redirect 로 돌려준 모든 쿼리 파라미터를 그대로 수집
+        function collectRedirectParams() {
+            const params = {};
+            new URLSearchParams(window.location.search).forEach((value, key) => {
+                params[key] = value;
+            });
+            return params;
+        }
+
+        async function handleCallback() {
+            const providerElement = document.getElementById('providerResult');
+            const resultElement = document.getElementById('result');
+
+            // 1) provider 가 보낸 내용 전체를 pretty 로 출력
+            const redirectParams = collectRedirectParams();
+            providerElement.innerText = JSON.stringify(redirectParams, null, 2);
+
+            const code = redirectParams.code;
+            const state = redirectParams.state;
+            const provider = localStorage.getItem('social_login_provider');
+
+            // provider 가 에러를 돌려준 경우
+            if (redirectParams.error) {
+                resultElement.innerText = 'Provider 에러: ' + JSON.stringify(redirectParams, null, 2);
+                return;
+            }
+
+            if (!code || !state || !provider) {
+                resultElement.innerText = '필수 파라미터가 누락되었습니다. (code/state/provider)';
+                return;
+            }
+
+            // 2) 백엔드 로그인 요청 후 응답 전체를 pretty 로 출력
+            try {
+                const response = await fetch(`${BACKEND_URL}/auth/social/${provider}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code: code,
+                        state: state,
+                        redirectUri: window.location.origin + window.location.pathname
+                    })
+                });
+
+                const data = await response.json();
+                resultElement.innerText = `HTTP ${response.status} ${response.statusText}\n\n`
+                    + JSON.stringify(data, null, 2);
+
+                if (response.ok) {
+                    localStorage.removeItem('social_login_state');
+                    localStorage.removeItem('social_login_provider');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                resultElement.innerText = '로그인 처리 중 오류 발생: ' + error.message;
+            }
+        }
+
+        handleCallback();
+    </script>
+</body>
+</html>

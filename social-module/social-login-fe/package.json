@@ -1,0 +1,13 @@
+{
+  "name": "social-login-fe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static frontend for social login test",
+  "scripts": {
+    "start": "serve -l 3005 .",
+    "dev": "serve -l 3005 ."
+  },
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}

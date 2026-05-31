@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: social-login
+  # 모듈 persistence.mode=jpa + datasource.mode=shared 이므로 호스트가 기본(@Primary) DataSource 를 제공한다.
+  # 값은 .env (spring-dotenv, 모듈 전이 의존) 또는 환경변수에서 주입된다.
+  datasource:
+    url: jdbc:postgresql://${ASH_SOCIAL_DB_HOST:localhost}:${ASH_SOCIAL_DB_PORT:5432}/${ASH_SOCIAL_DB_NAME:ash_social}
+    username: ${ASH_SOCIAL_DB_USERNAME:postgres}
+    password: ${ASH_SOCIAL_DB_PASSWORD:postgres}
+  jpa:
+    # 호스트 자체 엔티티는 없다. 모듈 테이블 생성은 ash.social-login.datasource.ddl-auto 가 담당한다.
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+ash:
+  social-login:
+    persistence:
+      mode: jpa                 # RDB 사용 (ProviderConfig/OAuthState 를 DB 에 저장)
+    datasource:
+      mode: shared              # 호스트의 @Primary DataSource 재사용
+      ddl-auto: update          # 테스트 편의를 위해 모듈이 자기 테이블을 자동 생성 (운영은 validate + schema.sql 권장)
+    token:
+      secret: ${ASH_SOCIAL_TOKEN_SECRET}    # 32자 이상 필수. .env 또는 환경변수로 주입.
+      issuer: social-login-test
+      access-token-ttl: PT1H
+      refresh-token-ttl: P14D
+    state:
+      ttl: PT5M
+    web:
+      enabled: true
+      base-path: /auth/social
+    provider:                   # 레퍼런스 공급자 활성화 (기본 false)
+      google:
+        enabled: true
+      kakao:
+        enabled: true
+      naver:
+        enabled: true
+    seed:                       # 기동 시 ProviderConfigStore 에 upsert 되는 provider 설정
+      providers:
+        google:
+          client-id: ${GOOGLE_CLIENT_ID:dummy-google-client-id}
+          client-secret: ${GOOGLE_CLIENT_SECRET:dummy-google-client-secret}
+          redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8080/auth/social/google/callback}
+          scopes: [openid, email, profile]
+        kakao:
+          client-id: ${KAKAO_CLIENT_ID:dummy-kakao-client-id}
+          client-secret: ${KAKAO_CLIENT_SECRET:dummy-kakao-client-secret}
+          redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:8080/auth/social/kakao/callback}
+          scopes: []   # 빈 배열 = scope 미요청 (동의 화면 없이 카카오 회원번호만 수신). 미설정(null)이면 모듈 기본 scope 적용
+        naver:
+          client-id: ${NAVER_CLIENT_ID:dummy-naver-client-id}
+          client-secret: ${NAVER_CLIENT_SECRET:dummy-naver-client-secret}
+          redirect-uri: ${NAVER_REDIRECT_URI:http://localhost:8080/auth/social/naver/callback}
+
+logging:
+  level:
+    com.ashmodule.social: DEBUG
