@@ -1,0 +1,49 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+# Firebase Service Account Key
+src/main/resources/tistory-fcm-2605-firebase-adminsdk-fbsvc-a99fe29df4.json
+*firebase-adminsdk*.json
+
+# 실행 로그 / 진단·임시 산출물 (커밋 제외)
+*.log
+java.args
+diag*.txt
+err.txt
+*_err.txt
+full_cp.txt

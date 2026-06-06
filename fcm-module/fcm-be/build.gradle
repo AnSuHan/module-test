@@ -1,0 +1,108 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.1.0-RC1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.ashmodule'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+}
+
+repositories {
+	mavenCentral()
+	// 기능 모듈(ash-fcm-module)은 GitHub Packages 에 비공개로 배포되어 있다.
+	maven {
+		name = 'AshFcmModule'
+		url = uri('https://maven.pkg.github.com/AshModule/ash-fcm-module')
+		credentials {
+			username = (findProperty('gpr.user') ?: System.getenv('LOCAL_GITHUB_ACTOR') ?: System.getenv('GITHUB_ACTOR') ?: 'AnSuHan')
+			password = (findProperty('gpr.token') ?: System.getenv('LOCAL_GITHUB_TOKEN') ?: System.getenv('GITHUB_TOKEN'))
+		}
+	}
+}
+
+dependencies {
+	// 기능은 ash-fcm-module 이 제공한다. 발송/조회/통계/예약/토큰 서비스 빈이 여기서 온다.
+	// firebase-admin/JPA/actuator/prometheus/h2 등은 모듈에서 전이 의존으로 따라온다.
+	implementation 'com.ashmodule:ash-fcm-module:0.0.1-SNAPSHOT'
+
+	// 컨트롤러/보안설정을 컴파일하기 위해 web·security starter 를 명시적으로 둔다.
+	// (모듈은 이들을 implementation 으로 가져 Gradle 메타데이터상 소비자 compile 경로엔 노출되지 않음)
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
+	// Swagger UI / OpenAPI 문서 (springdoc 3.0.x 가 Spring Boot 4 / Spring Framework 7 대응)
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// 이 프로젝트는 자체 메인 클래스를 사용하여 실행한다.
+// (모듈의 FcmApplication 대신 로컬 FcmApplication을 사용)
+springBoot {
+	mainClass = 'com.ashmodule.fcm.FcmApplication'
+}
+
+// SNAPSHOT 모듈은 캐시하지 않고 항상 최신본을 받는다.
+configurations.all {
+	resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+// bootRun 실행 전에 8080 포트를 점유한 프로세스를 강제 종료한다.
+// (이전 인스턴스가 떠 있어 "Port 8080 was already in use" 로 실패하는 것을 방지)
+def serverPort = '8080'
+tasks.register('killServerPort') {
+	description = "Kill any process listening on port ${serverPort} before running the app."
+	doLast {
+		def os = System.getProperty('os.name').toLowerCase()
+		try {
+			if (os.contains('win')) {
+				def out = ['cmd', '/c', 'netstat -ano -p tcp'].execute().text
+				def pids = out.readLines()
+						.findAll { it.contains('LISTENING') }
+						.findAll { line ->
+							def cols = line.trim().split(/\s+/)
+							cols.size() >= 2 && cols[1].endsWith(":${serverPort}")
+						}
+						.collect { it.trim().split(/\s+/).last() }
+						.findAll { it ==~ /\d+/ && it != '0' }
+						.unique()
+				pids.each { pid ->
+					println "[killServerPort] killing PID ${pid} on port ${serverPort}"
+					['taskkill', '/F', '/PID', pid].execute().waitFor()
+				}
+				if (pids.isEmpty()) println "[killServerPort] port ${serverPort} is free"
+			} else {
+				def pids = ['bash', '-c', "lsof -ti tcp:${serverPort} || true"].execute().text.trim()
+				if (pids) {
+					pids.split(/\s+/).each { pid ->
+						println "[killServerPort] killing PID ${pid} on port ${serverPort}"
+						['kill', '-9', pid].execute().waitFor()
+					}
+				} else {
+					println "[killServerPort] port ${serverPort} is free"
+				}
+			}
+		} catch (Exception e) {
+			println "[killServerPort] skipped (could not inspect port): ${e.message}"
+		}
+	}
+}
+
+tasks.named('bootRun') {
+	dependsOn 'killServerPort'
+}

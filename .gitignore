@@ -1,2 +1,11 @@
-# fcm-module: 별도 관리 대상 — 이 저장소에서 추적하지 않음
-fcm-module/
+# fcm-module 은 이 저장소에서 함께 관리한다.
+# 빌드 산출물/비밀키는 각 하위 프로젝트의 .gitignore 가 제외하며,
+# 아래는 절대 추적하면 안 되는 항목에 대한 저장소 차원의 안전망이다.
+
+# Firebase 서비스 계정 개인키 (서버 자격증명 — 절대 커밋 금지)
+**/*firebase-adminsdk*.json
+
+# 빌드/툴 산출물
+**/build/
+**/.gradle/
+**/.dart_tool/
