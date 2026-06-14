@@ -1,0 +1,53 @@
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 0 16px;
+  line-height: 1.5;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+button {
+  font-size: 1rem;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+pre {
+  background: #f4f4f4;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+h3 {
+  margin-top: 24px;
+}
+
+.error {
+  color: #c00;
+  white-space: pre-wrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #16171d;
+    color: #ddd;
+  }
+  pre {
+    background: #1f2028;
+    border-color: #333;
+    color: #ddd;
+  }
+}

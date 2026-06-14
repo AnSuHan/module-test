@@ -9,3 +9,6 @@
 **/build/
 **/.gradle/
 **/.dart_tool/
+
+# 런타임 로그 (예: social-login-be/boot.log)
+**/*.log
